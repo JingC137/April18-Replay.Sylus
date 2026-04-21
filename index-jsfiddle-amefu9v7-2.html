@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html>
+
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>April18-Replay.Sylus</title>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { 
+            background: #000; 
+            color: #b0b0b0; 
+            font-family: "PingFang SC", "STHeiti", sans-serif;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* ================= 1. 初始叙事界面样式 ================= */
+        #story-section { padding: 100px 25px 200px 25px; max-width: 650px; margin: 0 auto; display: block; transition: opacity 0.8s ease; }
+        .paragraph { margin-bottom: 50px; opacity: 0; transform: translateY(30px); transition: all 1.2s cubic-bezier(0.215, 0.61, 0.355, 1); line-height: 2; letter-spacing: 1px; }
+        .paragraph.active { opacity: 1; transform: translateY(0); }
+        .highlight { color: #cc0000; font-weight: bold; }
+
+        .trigger-section { display: flex; flex-direction: column; align-items: center; margin-top: 120px; opacity: 0; transition: opacity 2s ease; }
+        .trigger-section.active { opacity: 1; }
+        .eye-icon-wrapper { position: relative; width: 100px; height: 60px; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: transform 0.3s ease; }
+        .eye-icon-wrapper:hover { transform: scale(1.2); }
+        .eye-shape { position: absolute; width: 100%; height: 100%; border: 2px solid #ff0000; border-radius: 80% 0; transform: rotate(45deg); box-shadow: 0 0 15px #ff0000, inset 0 0 10px #ff0000; }
+        .eye-core { position: absolute; width: 25px; height: 25px; background: #ff0000; border-radius: 50%; box-shadow: 0 0 20px #ff0000; z-index: 2; }
+        .eye-core::after { content: ''; width: 6px; height: 6px; background: #fff; border-radius: 50%; position: absolute; top: 25%; left: 25%; }
+
+        /* ================= 2. 机械眼主界面样式 ================= */
+        #eye-interface {
+            display: none; opacity: 0; z-index: 100;
+            position: absolute; top: 0; left: 0; width: 100%; min-height: 100vh;
+            background: #000; transition: opacity 1s ease;
+        }
+
+        .eye-header {
+            position: relative; width: 100%; height: 60vh; min-height: 400px;
+            background: radial-gradient(circle at center, #220000 0%, #050000 100%);
+            display: flex; justify-content: center; align-items: center; overflow: hidden;
+            border-bottom: 2px solid #222;
+        }
+
+        .rain { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+        .drop { position: absolute; background: linear-gradient(transparent, #ff4444); box-shadow: 0 0 5px #ff0000; animation: rain-fall linear infinite; }
+        @keyframes rain-fall { to { transform: translateY(100vh); } }
+
+        .eye-container { position: relative; width: 520px; max-width: 90vw; height: 280px; z-index: 2; }
+        .eye-main {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 100%; height: 100%; background: #1a0000; border-radius: 50%; 
+            box-shadow: 0 0 100px #ff000033, inset 0 0 60px #000;
+            overflow: hidden; border: 15px solid #3d0000; border-top-color: #5a1111; border-bottom-color: #5a1111;
+        }
+        .iris {
+            position: absolute; top: 50%; left: 50%; width: 180px; height: 180px; margin-top: -90px; margin-left: -90px;
+            background: radial-gradient(circle at 35% 35%, #ffeeee 0%, #ff4444 30%, #880000 70%, #220000 100%);
+            border-radius: 50%; box-shadow: 0 0 50px #ff2222; z-index: 1; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .ring { position: absolute; top: 50%; left: 50%; border-radius: 50%; transform: translate(-50%, -50%); border: 6px solid rgba(255, 170, 51, 0.4); }
+        .ring1 { width: 130px; height: 130px; border-style: dashed; animation: rotate-ring 10s linear infinite; }
+        .pupil {
+            position: absolute; top: 50%; left: 50%; width: 65px; height: 65px; transform: translate(-50%, -50%);
+            background: radial-gradient(circle at 30% 30%, #fff, #ffcc00 40%, #aa0000 80%, #000); border-radius: 50%; box-shadow: 0 0 30px #ffff88;
+        }
+        @keyframes rotate-ring { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        /* ================= 3. Elsewhere 风格封面卡片库 ================= */
+        .card-wrapper { 
+            display: flex; justify-content: center; flex-wrap: wrap; 
+            gap: 20px; padding: 40px 20px 20px 20px; 
+            position: relative; z-index: 10;
+        }
+        .ew-card {
+            width: 100%; max-width: 350px; background: #0a0a0a; border: 2px solid #222;
+            cursor: pointer; transition: 0.3s; overflow: hidden; position: relative;
+        }
+        .ew-card:hover { border-color: #ff0000; transform: translateY(-5px); box-shadow: 0 10px 20px rgba(255,0,0,0.15); }
+        .ew-card img { width: 100%; display: block; filter: brightness(0.8) contrast(1.2); transition: 0.3s; }
+        .ew-card:hover img { filter: brightness(1); }
+        .ew-card-title { padding: 15px; border-top: 1px solid #222; }
+        .ew-card-title h2 { color: #ff0000; font-size: 1rem; margin-bottom: 5px; font-family: 'Courier New', Courier, monospace; }
+        .ew-card-title p { font-size: 0.8rem; color: #666; }
+
+        .final-trigger-container { display: flex; justify-content: center; padding: 20px; position: relative; z-index: 10; margin-bottom: 50px; }
+
+        /* ================= 4. 全屏叙事弹出层 (Modal) ================= */
+        #narrative-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 300; display: none; overflow-y: auto;
+            padding: 80px 20px 100px 20px;
+        }
+        .overlay-content { max-width: 680px; margin: 0 auto; color: #d1d1d1; font-family: "Georgia", serif; }
+        
+        .story-container { display: none; } /* 默认隐藏所有剧本 */
+        
+        .ew-block {
+            border: 4px solid #1a1a1a; padding: 35px; margin-bottom: 40px;
+            background: #000; opacity: 0; transform: translateY(20px); transition: 0.8s all; line-height: 1.8;
+        }
+        .ew-block.active { opacity: 1; transform: translateY(0); }
+        .ew-block p { margin-bottom: 15px; }
+
+        .red-id { color: #ff0000; font-family: monospace; font-weight: bold; }
+        .sys-text { color: #00ff00; font-family: monospace; font-size: 0.9rem; margin-bottom: 5px;}
+        .warn-text { color: #ffaa00; font-family: monospace; font-size: 0.9rem; margin-bottom: 5px;}
+        .mosaic { background: #333; color: #333; padding: 0 5px; }
+        
+        /* 选项按钮 */
+        .btn-group { display: flex; justify-content: center; gap: 15px; margin-top: 20px; flex-wrap: wrap; }
+        .ew-btn {
+            border: 2px solid #555; color: #aaa; padding: 10px 20px; cursor: pointer;
+            font-family: monospace; transition: 0.3s; background: transparent; font-size: 1rem;
+            display: inline-block; text-align: center;
+        }
+        .ew-btn:hover { border-color: #ff0000; color: #ff0000; background: rgba(255,0,0,0.1); }
+        
+        .esc-btn {
+            position: fixed; top: 20px; right: 20px; border: 1px solid #ff0000; color: #ff0000;
+            padding: 8px 15px; cursor: pointer; z-index: 310; background: rgba(0,0,0,0.8);
+            font-family: monospace; transition: 0.3s;
+        }
+        .esc-btn:hover { background: #ff0000; color: #000; }
+
+        .archive-img { width: 100%; max-width: 500px; margin: 10px 0; border: 1px solid #333; }
+        .branch-section { display: none; }
+
+        #flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ff0000; z-index: 200; display: none; }
+  </style>
+
+  
+</head>
+<body>
+  <div id="flash"></div>
+
+<section id="story-section">
+  <div class="paragraph">4月20日。星期一。</div>
+  <div class="paragraph">
+    电梯门映出一张模糊的面孔。<br />你盯着看，很难产生“这是我”的实感。
+  </div>
+  <div class="paragraph highlight">4月18日……</div>
+  <div class="paragraph highlight">4月19日……</div>
+  <div class="paragraph highlight">……</div>
+  <div class="paragraph">
+    你来到工位，机械地划开网页。<br />在按部就班前的最后五分钟，你只想找点碎屑填补大脑的空穴。
+  </div>
+  <div class="paragraph">
+    然后，你看见了它。<br />收藏夹里静静躺着一个从未见过的图标：<br /><span
+      class="highlight"
+      >一只红色的机械眼睛。</span
+    >
+  </div>
+
+  <div class="trigger-section" id="trigger">
+    <div class="eye-icon-wrapper" onclick="startTransition()">
+      <div class="eye-shape"></div>
+      <div class="eye-core"></div>
+    </div>
+    <div
+      style="margin-top:20px; font-size: 0.7rem; letter-spacing: 3px; color:#440000;"
+    >
+      ERROR: UNKNOWN_LINK
+    </div>
+  </div>
+</section>
+
+<div id="eye-interface">
+  <div class="eye-header">
+    <div class="rain" id="rain"></div>
+    <div class="eye-container">
+      <div class="eye-main">
+        <div class="iris" id="iris">
+          <div class="ring ring1"></div>
+          <div class="pupil">
+            <div
+              style="position: absolute; top: 20%; left: 25%; width: 16px; height: 16px; background: #fff; border-radius: 50%; box-shadow: 0 0 10px #fff;"
+            ></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-wrapper">
+    <div class="ew-card" onclick="openNarrative('story-1')">
+      <img
+        src="https://s3.bmp.ovh/2026/04/20/GW0CBYLS.png"
+        alt="Tartarus Icon"
+      />
+      <div class="ew-card-title">
+        <h2>TARTARUS_SECTOR</h2>
+        <p>[ 记忆碎片01 / 无罪樊笼 ]</p>
+      </div>
+    </div>
+
+    <div class="ew-card" onclick="openNarrative('story-2')">
+      <img
+        src="https://s3.bmp.ovh/2026/04/21/lDrYqOC0.png"
+        alt="Silverwing Icon"
+      />
+      <div class="ew-card-title">
+        <h2>SILVERWING_DEMON</h2>
+        <p>[ 记忆碎片02 / 迟到的祝福 ]</p>
+      </div>
+    </div>
+
+    <div class="ew-card" onclick="openNarrative('story-3')">
+      <img
+        src="https://s3.bmp.ovh/2026/04/21/YjFEU98J.jpg"
+        alt="Abyss Sovereign Icon"
+      />
+      <div class="ew-card-title">
+        <h2>ABYSS_SOVEREIGN</h2>
+        <p>[ 记忆碎片03 / 花漫谷间 ]</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="final-trigger-container">
+    <div
+      class="ew-btn"
+      style="border-color: #ff0000; color: #ff0000; width: 100%; max-width: 400px; padding: 15px;"
+      onclick="openNarrative('story-final')"
+    >
+      [ [警告]：检测到非法 Evol 波段干预 ]
+    </div>
+  </div>
+</div>
+
+<div id="narrative-overlay">
+  <div class="esc-btn" onclick="closeNarrative()">ESC / 返回</div>
+
+  <div class="overlay-content">
+    <div id="story-1" class="story-container">
+      <div class="ew-block">
+        <p>
+          <img
+            src="https://s3.bmp.ovh/2026/04/20/GW0CBYLS.png"
+            alt="1000031827.png"
+            style="width:100px; margin-bottom:15px;"
+          />
+        </p>
+        <p>
+          （你点开了这个红色机械眼图标。网页并没有加载出预期的内容，而是一片漆黑，只有左上角跳动着一个红色的ID：<span
+            class="red-id"
+            >Tartarus</span
+          >）
+        </p>
+        <p>
+          <span class="red-id">Tartarus：</span> 想知道
+          <span class="mosaic">████████</span> ？
+        </p>
+        <p>
+          （这太荒谬了，黑客攻击？什么Tartarus)
+        </p>
+        <p style="font-family: monospace; color:#666; margin-top:10px;">ESC</p>
+      </div>
+
+      <div class="ew-block">
+        <p class="sys-text">[系统]：提取 4月18日抹除的记忆……</p>
+        <p class="red-id">
+          [警告]：当前时空权重锁定——“无罪樊笼 (Tartarus Sector)”。
+        </p>
+        <p class="sys-text">[关联目标]：Tartarus · 秦彻</p>
+        <p class="sys-text">[同步率：100%] —— 正在进入ing</p>
+        <p>（白光。刺眼的白光瞬间剥夺了你的视觉）</p>
+        <p>（下一秒，你猛地从办公桌上直起身）</p>
+        <p>
+          （办公室里，打字声、此起彼伏的交谈声重新灌入耳膜。）
+        </p>
+      </div>
+
+      <div class="ew-block">
+        <p>
+          同事：<br />“……嘿，睡着了？看来周末确实累得够呛。喂，晚上下班去吃那家麻辣小龙虾怎么样？刚好局里发了满减优惠券。”
+        </p>
+        <p>
+          （你没有回应。你低头看着屏幕，上面是一份再普通不过的“无主物非法交易案”电子卷宗。没有红色眼睛，没有
+          Tartarus，也没有那个神秘网页）
+        </p>
+        <p>“4月18日……”<br />“……那不就是明天吗？”<br />“是秦彻……吗？”</p>
+        <p>你失神地盯着屏幕，那种被某种意志“锁定”的战栗感挥之不去。</p>
+        <p style="text-align: center; margin-top:30px; font-weight:bold;">
+          你决定:
+        </p>
+        <div class="btn-group">
+          <button class="ew-btn" onclick="showBranch('archive')">
+            [搜索档案]
+          </button>
+          <button class="ew-btn" onclick="showBranch('discuss')">
+            [算了，头晕……晚上吃什么]
+          </button>
+        </div>
+      </div>
+
+      <div
+        id="branch-archive"
+        class="branch-section ew-block"
+        style="border-color:#ff0000;"
+      >
+        <p>
+          警务系统的圆圈转得让人心焦。突然，屏幕闪烁出一道红色的警示框，随即一张张关于他的资料弹了出来：
+        </p>
+        <img
+          src="https://s3.bmp.ovh/2026/04/20/hQtaZEG1.jpg"
+          alt="1000031810.jpg"
+          class="archive-img"
+        />
+        <img
+          src="https://s3.bmp.ovh/2026/04/20/veE1Etwk.jpg"
+          alt="1000031811.jpg"
+          class="archive-img"
+        />
+        <img
+          src="https://s3.bmp.ovh/2026/04/20/fG2EMEVe.jpg"
+          alt="1000031809.jpg"
+          class="archive-img"
+        />
+        <div class="btn-group">
+          <button class="ew-btn" onclick="showFinal('final-story-1')">
+            继续
+          </button>
+        </div>
+      </div>
+
+      <div id="branch-discuss" class="branch-section ew-block">
+        <p>“……吃什么？哦，你们定就行。”</p>
+        <p>同事们聚在一起兴奋地讨论着，空气中弥漫着咖啡的味道和职场的琐碎。</p>
+        <div class="btn-group">
+          <button class="ew-btn" onclick="showFinal('final-story-1')">
+            继续
+          </button>
+        </div>
+      </div>
+
+      <div id="final-story-1" style="display: none;">
+        <div class="ew-block">
+          <p>
+            就在你神游时，同事把一张花花绿绿的外卖单塞进你手里，打断了你的思绪。
+          </p>
+          <p>“发什么呆？喏，你的信，吃小龙虾吗？就在上下城区交界那家。”</p>
+          <p>你拆开信，瞳孔骤然缩紧。</p>
+          <p>一行力透纸背、极其张狂的字迹：</p>
+          <p
+            class="red-id"
+            style="font-size:1.3rem; border:1px dashed #400; padding:20px; margin:20px 0;"
+          >
+            “想拿到奖励，就准时赴约。——T”
+          </p>
+          <p>
+            耳边的嘈杂声远去了，同事的笑闹、警局的打字声、马克杯残留的余温，都在这一刻迅速褪色、剥离。
+          </p>
+          <p>你仿佛回到了多年前那个雨夜的下城区。</p>
+          <p>谁知，那些无疾而终的心思从未真正风干。</p>
+          <p>
+            它们在无数个失眠的深夜里，顺着你血管的纹理，悄无声息地向下扎根，盘踞在你心口隐秘的角落，汲取着你的心跳作为养分。
+          </p>
+          <p>寻找他的这些年也许只是带着枷锁的流亡罢了。</p>
+          <p>
+            今天看到他的信息，你突然意识到，所谓“奖励”指的或许就是那个日期。
+          </p>
+          <p class="red-id">生日。</p>
+        </div>
+
+        <div class="ew-block">
+          <p>你没有过真正意义上的生日，直到遇见秦彻。</p>
+          <p>
+            那个时候你已经很大了，大到足以知道这个世界上只有傻瓜才相信许愿。吹灭蜡烛许愿，不如指望下城区垃圾堆里的废铁涨价。
+          </p>
+          <p>
+            秦彻推掉了一桩在公海上的大生意，把一个包装得堪称粉嫩（可以说跟他那身戾气格格不入）的蛋糕推到你面前。
+          </p>
+          <p>你满嘴奶油，仰着头问他：“秦彻，为什么今天我要吃蛋糕？”</p>
+          <p>“哪有这么多为什么。过生日，当然要吃蛋糕。”</p>
+          <p>
+            “哦……那你呢？礼尚往来，下次我也提前给你准备。哎，你还没告诉我，你的生日是什么时候？”
+          </p>
+          <p>
+            秦彻原本正漫不经心地玩着打火机，闻言指尖微顿，火苗“啪”地熄灭在阴影里。
+          </p>
+          <p>“嗯？忘了。”</p>
+          <p>“这种事情怎么会忘记？”</p>
+          <p>“一个纪念衰老的数字，这有什么好值得记住的？”</p>
+        </div>
+
+        <div class="ew-block">
+          <p>
+            一个甜美的蛋糕、一个不屑于仪式却为你破例的午后，不露声色地治愈了你那些青涩、酸楚又无助的少女心事。
+          </p>
+          <p>你： “欸？秦彻你还没跟我说你生日呀——”</p>
+          <p>秦彻：“这么想知道我的生日？”</p>
+          <p>秦彻:“好奇……不如去猜猜看？猜对了有奖励。”</p>
+          <p>你： “这怎么猜的中——”</p>
+          <p>秦彻笑说，来日方长。</p>
+        </div>
+
+        <div class="ew-block" style="border-color:#ff0000;">
+          <p>
+            警局里的打字声重新灌入耳膜。
+          </p>
+          <p>你顺手抓起椅背上的警服外套，在同事们诧异的目光中径直走向门口。</p>
+          <p>同事：“哎？你去哪？那家龙虾店半夜才打折——”</p>
+          <p>你：<br />“去收网。我追踪很久的一个人……”</p>
+          </p>我还没跟他说过……</p>
+          <p
+            style="text-align:right; font-size:2.5rem; color:#ff0000; font-weight:bold; text-shadow:0 0 15px #ff0000; margin-top:30px;"
+          >
+            生日快乐。
+          </p>
+        </div>
+      </div>
+    </div>
+    <div id="story-2" class="story-container">
+      <div class="ew-block">
+        <p>
+          <img
+            src="https://s3.bmp.ovh/2026/04/21/lDrYqOC0.png"
+            alt="1000031853.png"
+            class="archive-img"
+            style="border:none;"
+          />
+        </p>
+        <p>
+          你走出门，耳边响起巨大的羽翼振动声。阳光被遮天蔽日的阴影覆盖，白色的纸张在风中化作黑色的羽毛。
+        </p>
+      </div>
+
+      <div class="ew-block">
+        <p class="sys-text">[系统]：提取4月19日被抹除的记忆……</p>
+        <p class="red-id">
+          [警告]：当前时空权重锁定——“银翼恶魔 (Silverwing Demon)”。
+        </p>
+        <p class="sys-text">[关联目标]：Demon· Sylus</p>
+        <p class="sys-text">[同步率：100%] —— 正在进入：迟到的祝福。</p>
+      </div>
+
+      <div class="ew-block">
+        <p>啊啊啊啊啊啊啊啊——</p>
+        <p>你踩空了——</p>
+        <p>
+          失重感让你胃里一阵翻腾。当你再次睁开眼时，高楼大厦消失了，四周矗立着高耸入云的哥特式尖塔。
+        </p>
+        <p>
+          你有些凌乱地抓抓头发，发现这种“穿越”不仅附带场景转换，甚至还带了自动换装功能。
+        </p>
+        <p>
+          点开一个红色眼睛的网页，居然能引发这种跨次元的物理绑架？这种逻辑即便是在最荒诞的都市怪谈里也显得过于超标。还有身上这套衣服，穿着这身现代感十足的制服出现在这群古老的哥特建筑群里，简直就像是闯进中世纪晚宴的赛博游客好吧。
+        </p>
+      </div>
+
+      <div class="ew-block">
+        <p>
+          你试探着活动了一下手腕，万幸的是那个因为长期伏案工作而导致的“亚健康肉体”不见了。取而代之的是一种紧实的肌肉触感。即便隔着厚实的制服面料，你也能感受到这具身体里奔涌着的、陌生的生命力。
+        </p>
+        <p>
+          这大概就是所谓的“魂穿福利”。既然现实世界无法提供奇迹，那么在这场被神秘红色眼镜支配的梦境里，你决定收起多余的戒心。
+        </p>
+        <p>
+          你抬头看向远处。在群山之巅，一座透着不详红光的巨大古堡正静静地俯瞰着这片荒凉。
+        </p>
+      </div>
+
+      <div class="ew-block">
+        <p>
+          刚才系统提到的关联人物是什么恶魔Sylus，那么这座看上去就写着“生人勿进”的古堡，大概就是那个恶魔的巢穴了。
+        </p>
+        <p>所以4月18到底是什么日子。</p>
+        <p>你踏着枯萎的玫瑰碎片向前走去，思绪飞速旋转。</p>
+        <p>
+          这身衣服与这个时代格格不入。如果这个世界不该出现这种制服，那是否意味着，你并非第一个？上一个穿着这身衣服的人，现在又在哪里？
+        </p>
+        <p>路出乎意料地好走，穿过宽阔的石桥，城堡大门向你敞开着。</p>
+        <p>恶魔已经在那里等候你的祝福多时。</p>
+      </div>
+
+      <div class="ew-block">
+        <p>砰——</p>
+        <img
+          src="https://s3.bmp.ovh/2026/04/21/JIX9gQRQ.png"
+          alt="1000031848.png"
+          class="archive-img"
+        />
+        <p>“生日快乐，虽然已经算是迟到的祝福了——”</p>
+        <br />
+        <p>砰——</p>
+        <img
+          src="https://s3.bmp.ovh/2026/04/21/AACDXFy8.png"
+          alt="1000031845.png"
+          class="archive-img"
+        />
+        <p>
+          你原本制定了一个极其详尽的计划。那是你们相遇后的第一个生日。为了在4月18日那天，在他作为“恶魔”漫长的生命里，送上第一份真正意义上的祝福。
+        </p>
+        <p>
+          为此你特意去城镇采购了一大批火药，顺便跟你新为此研究的爆炸魔法结合到一起，但从4月18日的零点开始，为他放一场盛大的烟花秀。
+        </p>
+      </div>
+      <div class="ew-block" style="border-color:#ff0000;">
+          但整整24小时，你不知道自己去了哪里，意识坠入了一片白炽色的虚无，你隐约记得自己仿佛置身于无数座由透明玻璃构成的长条房子里，它们高耸入云，像是一排排巨大的、直插云霄的棱镜。
+        </p>
+        <p>然后天空又变成了黑紫色。</p>
+        <p>
+          雨点冰冷地砸在脸上，你感觉到自己正跨坐在一个飞速行驶的、散发着机械热量的庞然大物上。鼻翼间充斥着熟悉的皮革与冷冽的雪松味。
+        </p>
+        <p>你脱口唤道：</p>
+        <p>“秦彻？”</p>
+      </div>
+    </div>
+    <div id="story-3" class="story-container">
+      <div class="ew-block">
+        <p>
+          <img
+            src="https://s3.bmp.ovh/2026/04/21/YjFEU98J.jpg"
+            alt="1000031936.jpg"
+            class="archive-img"
+            style="border:none;"
+          />
+        </p>
+        <p>
+          伴随着古堡露台上那场盛大烟花的轰鸣，彩色的火光在夜空中炸裂，又迅速化作无数细碎的星光坠落。
+        </p>
+        <p>
+          耳边的鸣响渐渐远去，你睁开眼，发现自己正身处一片巨大的低谷花地。四周矗立着嶙峋的怪石，不知名的野花在微风中摇曳，
+        </p>
+      </div>
+
+      <div class="ew-block">
+        <p class="sys-text">[系统]：正在强行提取 4月20日 被抹除的记忆深处……</p>
+        <p class="red-id">
+          [警告]：当前时空权重锁定——“深渊主宰 (Abyss Sovereign)”。
+        </p>
+        <p class="sys-text">[关联目标]：秦彻 。</p>
+        <p class="sys-text">[同步率：100%] —— 正在进入：花漫谷间。</p>
+      </div>
+
+      <div class="ew-block">
+        <p>
+          你转身，看到秦彻正躺在你身边的草地上闭目养神，灰白色的短发在微光下显得有些蓬松，让他原本凌厉的面部轮廓平添了几分鲜有的柔和。
+        </p>
+        <p>像是受到某种野性的磁场吸引，你竟鬼使神差地伸出手。</p>
+        <p>秦彻：<br />“是想要这颗宝石？”</p>
+        <p>原本紧闭双眼的男人猛地扣住了你的手腕。</p>
+        <p>“直接开口跟我做场交易，可比用猫爪来抓效率高得多。”</p>
+        <p>你试探着开口喊他，“秦彻？”</p>
+        <p>他轻笑一声，指腹漫不经心地摩挲着你的手腕回答，嗯。</p>
+        <p>“怎么，盯着我看了半天，最后就只打算对我做这些？”</p>
+      </div>
+
+      <div class="ew-block">
+        <p>
+          还没等你有反应，他已经揽住你的腰。一阵天旋地转后，你被他稳稳地按在怀里，被迫趴在他宽阔结实的胸口上。
+        </p>
+        <p>秦彻卷着你的一缕头发，懒洋洋的开口道。</p>
+        <p>“在这个距离看你的眼睛，更不想移开目光了。”</p>
+        <p>“眼睛？”</p>
+        <p>眼睛？</p>
+        <p>对! 眼睛!</p>
+        <p>那个红色的机械红眼。</p>
+        <p>一切的源头。</p>
+      </div>
+
+      <div class="ew-block">
+        <p>
+          你急切地挣脱他的怀抱坐起来，盯着他那双红得炽热的眼睛，颤抖地询问：
+        </p>
+        <p>“秦彻，4月18日……”</p>
+        <p>“是你的生日，对吗？”</p>
+        <p>秦彻仰躺在草地上，喉间溢出一声愉悦的轻笑。</p>
+      </div>
+
+      <div class="ew-block" style="border-color:#ff0000; background: #0a0000;">
+        <p class="sys-text" style="color:#ffaa00;">
+          [系统]：检测到高维度情感共鸣，数据溢出。
+        </p>
+        <p class="red-id">[警告]：检测到非法 Evol 波段干预。</p>
+        <br />
+        <p style="font-size: 1.2rem; margin: 20px 0;">
+          “在没有你的世界里，生日对我而言并没有什么意义。”
+        </p>
+        <br />
+        <p class="sys-text" style="color:#ffaa00;">
+          [系统]：检测到高维度情感共鸣，数据溢出。
+        </p>
+        <p class="red-id">[警告]：强制退出</p>
+        <p class="red-id">[警告]：强制退出</p>
+        <p class="red-id">[警告]：强制退出</p>
+
+        <div
+          class="ew-btn"
+          style="margin-top: 20px;"
+          onclick="closeNarrative()"
+        >
+          esc/退出
+        </div>
+      </div>
+    </div>
+    <div id="story-final" class="story-container">
+      <div class="ew-block">
+        <p>
+          你睁开眼，耳边是电脑的嗡嗡声，以及不远处同事敲击机械键盘的哒哒声。
+        </p>
+        <p>忙碌的一周从周一开始。</p>
+        <p>同事： “怎么一大早就一副魂不守舍的样子？咖啡还没起作用吗？”</p>
+        <p>你： “不知道……好累。”</p>
+        <p>同事： “放假去哪玩了？”</p>
+        <p>你：（揉了揉酸痛的脖子）“好像也没干什么啊……”</p>
+        <p>
+          同事：
+          “对了，你昨晚朋友圈发的‘痛楼’照片真带感啊！我这种不玩游戏的都被帅到了。”
+        </p>
+        <p>你： “啊？什么？什么痛楼？”</p>
+        <p>
+          同事：
+          “就是你喜欢的那个游戏角色，秦彻的生日活动啊！你朋友圈不是还配文说准时赴约了嘛？”
+        </p>
+        <p>你：（愣了几秒，记忆开始缓慢回笼）“哦哦对啊对啊，很漂亮吧。”</p>
+      </div>
+
+      <div class="ew-block">
+        <p>
+          你兴致勃勃地打开手机给感兴趣的同事分享起来。相册里满是你这两天参加秦彻线下庆生活动的打卡照：灯光秀、巨幅的海报，还有现场熙熙攘攘同样爱着他的人群。
+        </p>
+        <img
+          src="https://s3.bmp.ovh/2026/04/21/7DaaMpBX.jpg"
+          alt="1000031768.jpg"
+          class="archive-img"
+        />
+        <img
+          src="https://s3.bmp.ovh/2026/04/21/YADLiYD8.jpg"
+          alt="1000031767.jpg"
+          class="archive-img"
+        />
+      </div>
+
+      <div class="ew-block">
+        <p>
+          下班后，你回到家，像往常一样打开《恋与深空》，一脸傻笑着在屏幕上对秦彻“上下其手”。
+        </p>
+        <p>
+          点开卡面，回味那些被定格的剧情，游戏里的脚本终究有穷尽的终点，可那些没被书写出的、独属于你们的碎片呢？
+        </p>
+        <p>
+          黑暗里，你任由想象力无限延伸。身份各异的他，在那些你无法全面了解的时空里，是否也会得到生日祝福？
+        </p>
+        <p>屏幕里的他，此刻正穿着银翼恶魔的暗纹礼服。</p>
+        <p>你： “恶魔先生，生日快乐哦……”</p>
+        <p>最后你关上灯，陷进柔软的被窝。</p>
+      </div>
+
+      <div class="ew-block" style="border-color:#ff0000;">
+        <p class="sys-text">[系统]：检测到高维度情感共鸣，数据溢出。</p>
+        <p class="sys-text">[系统]：正在建立加密通讯连接……</p>
+        <p class="red-id">[警告]：检测到非法 Evol 波段干预。</p>
+        <p class="red-id">
+          [警告]：当前时空逻辑出现断层——祝福未在正确扇区生效。
+        </p>
+        <p class="sys-text" style="color:#00ffff;">
+          [请求]：是否开启“时空回溯”。
+        </p>
+        <p class="sys-text" style="color:#00ffff;">
+          [请求]：是否开启“时空回溯”。
+        </p>
+        <br />
+        <p>“这到底是怎么回事？改变什么过去？”</p>
+        <br />
+        <p class="sys-text" style="color:#ff00ff;">[地球online系统监测]</p>
+        <p>检测到核心目标（ID：秦彻）与宿主之间存在超阈值情感牵绊。</p>
+        <br />
+        <p class="sys-text" style="color:#ff00ff;">[地球online系统监测]</p>
+        <p>
+          因(ID：秦彻)个人Evol意志极度强悍，且其寻求执念导致 Evol
+          能量持续溢出，直接诱发了时空裂缝的非线性延伸与多重世界线叠加。
+        </p>
+        <br />
+        <p class="sys-text" style="color:#ff00ff;">[地球online系统监测]</p>
+        <p>
+          目前，多个时空截面的(ID：秦彻)正借由这份不可切断的灵魂契约锁定宿主。
+        </p>
+      </div>
+
+      <div class="ew-block" style="border-color:#aa0000; background:#0a0000;">
+        <p class="red-id">
+          [警告]：当前时空逻辑出现断层——祝福未在正确扇区生效。
+        </p>
+        <p class="warn-text">[警告]：检测到未知人物25%……30%</p>
+        <p class="red-id">[警告]：裂缝正在双向扩张。</p>
+        <p class="warn-text">[警告]：检测到未知人物50%……56%</p>
+        <p class="red-id">[警告]：检测到非法 Evol 波段干预。</p>
+        <p class="warn-text">[警告]：检测到未知人物75%……87%</p>
+        <p class="red-id">[警告]：裂缝正在双向扩张。</p>
+        <p class="warn-text">[警告]：检测到未知人物90%……92%</p>
+        <p class="red-id">[警告]：检测到非法 Evol 波段干预。</p>
+        <p class="red-id">[警告]：裂缝正在双向扩张。</p>
+        <br />
+        <p style="font-family: monospace; font-weight:bold;">【未知生物】:</p>
+        <img
+          src="https://s3.bmp.ovh/2026/04/21/o0SukWt0.jpg"
+          alt="1000031794.jpg"
+          class="archive-img"
+          style="border-color:#ff0000;"
+        />
+
+        <div style="margin-top: 30px; text-align: center;">
+          <div
+            class="ew-btn"
+            style="border-color:#ff0000; color:#ff0000; width: 100%;"
+            onclick="showClimax()"
+          >
+            你明白了故障由来，开启回溯，修正未生效的祝福。<br />
+            <span style="font-size: 0.8rem; color:#888;"
+              >（所有异维度干预将被修补。）<br />代价:
+              因果链的闭合，遗忘，回到最初。</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <div id="climax-section" style="display: none;">
+        <div class="ew-block">
+          <p>你已经知道了穿越的基本逻辑，所以对于突然闪现在这里你很冷静。</p>
+          <p>
+            书房中央，那个男人正把玩着一枚暗红色的宝石，听到动静，连眼皮都没抬一下。
+          </p>
+          <p>
+            秦彻：
+            “深夜翻窗造访，是觉得我这里的沙发，比你公寓那张硬板床更合心意？”
+          </p>
+          <p class="red-id">[警告]：数据溢出！</p>
+          <p>来不及解释了，你大步流星地走向他。</p>
+        </div>
+
+        <div class="ew-block" style="border-color:#444; border-style: dashed;">
+          <p>砰——</p>
+          <img
+            src="https://s3.bmp.ovh/2026/04/21/JIX9gQRQ.png"
+            alt="1000031848.png"
+            class="archive-img"
+          />
+          <p>“祝你生日快乐~祝你生日快乐~祝你生日快乐乐，祝你生日快乐！”</p>
+          <p>砰——</p>
+          <img
+            src="https://s3.bmp.ovh/2026/04/21/AACDXFy8.png"
+            alt="1000031845.png"
+            class="archive-img"
+          />
+          <p>“呃呃呃虽然已经是4月19，算是迟到的祝福话了——”</p>
+          <p>“但是……”</p>
+          <p>“但是，但是秦彻，未来我们还会有很多很多节日。”</p>
+          <p>“真的真的真的……”</p>
+          <p>“我们会一直在一起——</p>
+          <br />
+          <p class="red-id">[系统]：警告！维度稳定性不足70%！</p>
+          <p class="red-id">
+            [系统]：检测到高维度情感共鸣，数据溢出，即将发生强制离线！
+          </p>
+          <br />
+          <p>“秦彻，没有时间了，我——我必须要告诉你的是——”</p>
+        </div>
+
+        <div class="ew-block">
+          <p>秦彻有些意外地挑了挑眉，好整以暇地看着你。</p>
+          <p>秦彻： “怎么，打算直接拘捕受审？”</p>
+          <p>
+            你深吸一口气，抬头直视那双红色的眼睛，语气从伪装的顽皮变得认真而专注。
+          </p>
+          <p>
+            古董挂钟的齿轮发出细微的咬合声，秒针划过最后一格，沉闷的钟声回荡在房间里。
+          </p>
+          <p>12:00。</p>
+          <p>
+            你迅速从口袋里摸出那个早已捂得温热的小礼盒，不由分说地拍进他宽大的掌心里。
+          </p>
+          <img
+            src="https://s3.bmp.ovh/2026/04/20/GW0CBYLS.png"
+            alt="1000031827.png"
+            class="archive-img"
+            style="width:100px;"
+          />
+          <p>你： “现在是4月18号。”</p>
+          <p>
+            你看着他那双向来波澜不惊的眼眸里，在这一刻终于泛起了一丝难以言喻的涟漪。
+          </p>
+          <p>“秦彻，生日快乐。”</p>
+        </div>
+
+        <div class="ew-block" style="border-color:#444; border-style: dashed;">
+          <p>
+            “哪怕你早已习惯了漫长的孤独，我还是希望在4月18日这一天，哦不，不止这一天，是往后的每一天，我祝福你——”
+          </p>
+           <img
+            src="https://s3.bmp.ovh/2026/04/21/JIX9gQRQ.png"
+            alt="1000031848.png"
+            class="archive-img"
+          />
+          <p>顷刻间，烟火在头顶的缝隙里炸开。</p>
+          <p>“我祝福——”</p>
+          <p>
+            秦彻低哑的嗓音被骤然绽开的轰鸣吞没，那未尽的语句，化作一个比烟火更滚烫的吻，轻轻落在你的唇上。
+          </p>
+          <p>“我祝福——”</p>
+        </div>
+
+        <div class="ew-block" style="border-color:#444; border-style: dashed;">
+          <p class="red-id">[系统]：警告！维度稳定性不足 10%！</p>
+          <p class="red-id">
+            [系统]：检测到高维度情感共鸣，数据溢出，即将发生强制离线！
+          </p>
+          <img
+            src="https://s3.bmp.ovh/2026/04/21/YjFEU98J.jpg"
+            alt="1000031936.jpg"
+            class="archive-img"
+            style="border:none;"
+          />
+          <p>花漫谷间。</p>
+          <p>你捧住他的脸，在他的唇齿间含糊地告白。</p>
+          <p>“秦彻……我真的真的好爱好爱好爱好爱你……”</p>
+        </div>
+
+        <div class="ew-block" style="border-color:#ff0000;">
+          <p class="sys-text" style="color:#fff;">[4月18日]</p>
+          <p>
+            当你再次睁开眼时，难得地感觉到一种前所未有的神清气爽，浑身都是四肢百骸都彻底舒展开来的惬意。你依稀记得自己做了一个很长、很混乱，却又温暖得让人想流泪的梦。
+          </p>
+          <p>今天是4月18，周六，你已经制定好了一整天的秦彻生日庆祝计划。</p>
+          <p>痛楼，十点，手机发出一声清脆的通知音。</p>
+          <p>你点亮屏幕，发现是一条来自《恋与深空》的官方推送。</p>
+          <br />
+          <p
+            style="font-family: monospace; border: 1px solid #555; padding: 20px;"
+          >
+            【临空市时空管理局·特别补丁】<br />
+            致各位猎人小姐：<br />
+            秦彻全新思念及惊喜补全计划即将开启！
+          </p>
+
+          <div
+            class="ew-btn"
+            style="margin-top: 30px;"
+            onclick="closeNarrative()"
+          >
+            [ END ]
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+  <script>
+    // --- 1. 初始滚动浮现逻辑 ---
+    const paragraphs = document.querySelectorAll('#story-section .paragraph');
+    const trigger = document.getElementById('trigger');
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) entry.target.classList.add('active');
+        });
+    }, { threshold: 0.3 });
+
+    paragraphs.forEach(p => observer.observe(p));
+
+    const lastObserver = new IntersectionObserver((entries) => {
+        if(entries[0].isIntersecting) setTimeout(() => trigger.classList.add('active'), 800);
+    }, {threshold: 1});
+    lastObserver.observe(paragraphs[paragraphs.length - 1]);
+
+    // --- 2. 转场进入主界面 ---
+    function startTransition() {
+        const flash = document.getElementById('flash');
+        const story = document.getElementById('story-section');
+        const eyeUI = document.getElementById('eye-interface');
+
+        flash.style.display = 'block';
+        
+        setTimeout(() => {
+            story.style.display = 'none';
+            eyeUI.style.display = 'block';
+            window.scrollTo(0, 0);
+            
+            setTimeout(() => {
+                flash.style.opacity = '0';
+                eyeUI.style.opacity = '1';
+                setTimeout(() => flash.style.display = 'none', 500);
+                initEyeMechanics();
+            }, 100);
+        }, 200);
+    }
+
+    // --- 3. 机械眼动画 ---
+    function initEyeMechanics() {
+        const rain = document.getElementById('rain');
+        if (rain.children.length === 0) {
+            for (let i = 0; i < 150; i++) {
+                const drop = document.createElement('div');
+                drop.className = 'drop';
+                drop.style.left = Math.random() * 100 + '%';
+                drop.style.width = '1px';
+                drop.style.height = (Math.random() * 50 + 20) + 'px';
+                drop.style.animationDuration = (Math.random() * 0.5 + 0.3) + 's';
+                drop.style.animationDelay = '-' + (Math.random() * 2) + 's';
+                drop.style.opacity = Math.random() * 0.5;
+                rain.appendChild(drop);
+            }
+        }
+
+        const iris = document.getElementById('iris');
+        const maxMove = 55;
+
+        function autoGlance() {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.sqrt(Math.random()) * maxMove;
+            const x = Math.cos(angle) * distance;
+            const y = Math.sin(angle) * distance;
+            iris.style.transform = `translate(${x}px, ${y}px)`;
+            setTimeout(autoGlance, Math.random() * 1300 + 500);
+        }
+        autoGlance();
+    }
+
+    // --- 4. 叙事覆盖层交互逻辑 (多剧本控制) ---
+    const overlay = document.getElementById('narrative-overlay');
+    const narrativeObserver = new IntersectionObserver((entries) => {
+        entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('active'); });
+    }, { threshold: 0.1 });
+
+    function openNarrative(storyId) {
+        overlay.style.display = 'block';
+        
+        // 隐藏所有剧本
+        document.querySelectorAll('.story-container').forEach(el => {
+            el.style.display = 'none';
+        });
+        
+        // 显示目标剧本
+        const targetStory = document.getElementById(storyId);
+        if (targetStory) {
+            targetStory.style.display = 'block';
+            
+            // 重置动画状态并重新监听
+            targetStory.querySelectorAll('.ew-block').forEach(b => {
+                b.classList.remove('active');
+                narrativeObserver.observe(b);
+            });
+        }
+    }
+
+    function closeNarrative() {
+        overlay.style.display = 'none';
+        overlay.scrollTop = 0; // 重置滚动条
+        
+        // 如果是从最终剧情退出，把高潮部分再藏起来
+        const climax = document.getElementById('climax-section');
+        if (climax) climax.style.display = 'none';
+    }
+
+    function showBranch(type) {
+        document.getElementById('branch-archive').style.display = (type === 'archive' ? 'block' : 'none');
+        document.getElementById('branch-discuss').style.display = (type === 'discuss' ? 'block' : 'none');
+        
+        document.querySelectorAll('.branch-section').forEach(b => {
+            if(b.style.display === 'block') narrativeObserver.observe(b);
+        });
+    }
+
+    function showFinal(finalId) {
+        const finalStory = document.getElementById(finalId);
+        if (finalStory) {
+            finalStory.style.display = 'block';
+            finalStory.querySelectorAll('.ew-block').forEach(b => narrativeObserver.observe(b));
+        }
+    }
+    
+    // 触发最终大高潮
+    function showClimax() {
+        const flash = document.getElementById('flash');
+        flash.style.display = 'block';
+        
+        setTimeout(() => {
+            const climax = document.getElementById('climax-section');
+            climax.style.display = 'block';
+            climax.querySelectorAll('.ew-block').forEach(b => narrativeObserver.observe(b));
+            
+            flash.style.opacity = '0';
+            setTimeout(() => { flash.style.display = 'none'; flash.style.opacity = '1'; }, 500);
+            
+            climax.scrollIntoView({ behavior: 'smooth' });
+        }, 200);
+    }
+  </script>
+</body>
+</html>
